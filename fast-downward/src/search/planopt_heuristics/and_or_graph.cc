@@ -67,27 +67,38 @@ void AndOrGraph::most_conservative_valuation() {
         if (node.type == NodeType::AND && node.successor_ids.empty()) {
             queue.push_back(node.id);
             // nós AND sem sucessores são marcados como true inicialmente
+            /* Nós AND sem sucessores são considerados forçados verdadeiros 
+			e são adicionados à fila porque, em um grafo AND-OR, um nó AND 
+			é verdadeiro se todos os seus sucessores são verdadeiros. 
+			Se um nó AND não possui sucessores, essa condição é trivialmente satisfeita, 
+			pois não há nenhum sucessor que possa ser falso.*/
             node.forced_true = true;
         }
     }
 
     while(!queue.empty()){
+    	// enquanto a file não estiver fazia será removido o nó da frente da fila
         NodeID current_id = queue.front();
         queue.pop_front();
         AndOrGraphNode &current_node = nodes[current_id];
 
         for (NodeID pred_id : current_node.predecessor_ids){
+        	// para cada predecessor do nó atual será incrementado o valor de sucessores forçados do predecessor
             AndOrGraphNode &pred_node = nodes[pred_id];
             pred_node.num_forced_successors++;
 
             bool should_forced_true = false;
             if(pred_node.type == NodeType::OR){
+            	// um nó OR é forçado verdadeiro se pelo menos um de seus sucessores for verdadeiro
                 should_forced_true = pred_node.num_forced_successors > 0;
             } else if(pred_node.type == NodeType::AND){
+            	// um nó AND é forçado verdadeiro se todos os seus sucessores forem verdadeiros
                 should_forced_true = pred_node.num_forced_successors == pred_node.successor_ids.size();
             }
 
             if(should_forced_true && !pred_node.forced_true){
+            	// se o nó predecessor atual for forçado verdadeiro e ainda não foi marcado como tal, ele é marcado
+            	// como forçado verdadeiro e adicionado na fila
                 pred_node.forced_true = true;
                 queue.push_back(pred_id);
             }
@@ -342,4 +353,10 @@ void test_and_or_graphs() {
         }, "g3", g3, ids3);
 }
 
+}
+
+// Função main para iniciar a execução do programa
+int main() {
+    planopt_heuristics::test_and_or_graphs();
+    return 0;
 }
