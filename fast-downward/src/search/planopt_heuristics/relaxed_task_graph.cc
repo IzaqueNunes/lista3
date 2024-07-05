@@ -9,6 +9,7 @@ namespace planopt_heuristics {
 RelaxedTaskGraph::RelaxedTaskGraph(const TaskProxy &task_proxy)
     : relaxed_task(task_proxy),
       variable_node_ids(relaxed_task.propositions.size()) {
+               
     /*
       TODO: add your code for exercise 2 (b) here. Afterwards
         - variable_node_ids[i] should contain the node id of the variable node for variable i
@@ -17,6 +18,31 @@ RelaxedTaskGraph::RelaxedTaskGraph(const TaskProxy &task_proxy)
         - the graph should contain precondition and effect nodes for all operators
         - the graph should contain all necessary edges.
     */
+
+       // Adicionando nó incial e o nó objetivo no grafo, como tipo OR
+ 		initial_node_id = graph.add_node(NodeType::OR);
+    	goal_node_id = graph.add_node(NodeType::OR);
+    	
+	    	// Para cada proposição é criado um nó no grafo e seu ID é armazenado
+	    for (size_t i = 0; i < relaxed_task.propositions.size(); ++i) {
+	        variable_node_ids[i] = graph.add_node(NodeType::OR);
+	    }
+	    
+		    // Adicionando arestas de todos os operadores da tarefa relaxada
+	    for (const auto &op : relaxed_task.operators) {
+	        // Criando nó para o operador
+	        int operator_node_id = graph.add_node(NodeType::AND);
+	
+	        // Adicionando arestas das proposições de pré-condição para o nó do operador
+	        for (PropositionID precond_id : op.preconditions) {
+	            graph.add_edge(variable_node_ids[precond_id], operator_node_id);
+	        }
+	
+	        // Adicionando arestas do nó do operador para as proposições de efeito
+	        for (PropositionID effect_id : op.effects) {
+	            graph.add_edge(operator_node_id, variable_node_ids[effect_id]);
+	        }
+	    } 
 }
 
 void RelaxedTaskGraph::change_initial_state(const GlobalState &global_state) {
@@ -39,6 +65,10 @@ bool RelaxedTaskGraph::is_goal_relaxed_reachable() {
     // return true iff the goal is reachable in the relaxed task.
 
     graph.most_conservative_valuation();
+
+    // Obtendo o nó de meta no gráfico
+    const AndOrGraphNode &goal_node = graph.get_node(goal_node_id); 
+    
     return graph.get_node(goal_node_id).forced_true;
 }
 
