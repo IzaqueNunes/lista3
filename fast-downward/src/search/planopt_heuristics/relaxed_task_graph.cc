@@ -22,7 +22,7 @@ RelaxedTaskGraph::RelaxedTaskGraph(const TaskProxy &task_proxy)
 		    // Adicionando arestas de todos os operadores da tarefa relaxada
 	    for (const auto &op : relaxed_task.operators) {
 	        // Criando nó para o operador
-	        int operator_node_id = graph.add_node(NodeType::AND);
+	        int operator_node_id = graph.add_node(NodeType::AND, op.cost);
 	
 	        // Adicionando arestas das proposições de pré-condição para o nó do operador
 	        for (PropositionID precond_id : op.preconditions) {
