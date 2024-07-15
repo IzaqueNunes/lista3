@@ -354,9 +354,3 @@ void test_and_or_graphs() {
 }
 
 }
-
-// Função main para iniciar a execução do programa
-int main() {
-    planopt_heuristics::test_and_or_graphs();
-    return 0;
-}
