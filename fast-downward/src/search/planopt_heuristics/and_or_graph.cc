@@ -112,59 +112,6 @@ void AndOrGraph::weighted_most_conservative_valuation() {
       additive costs of all its successors plus its direct cost) and add it to
       the queue.
     */
-
-    // Inicializando todos os custos aditivos para infinito, exceto os nós inicialmente na fila
-    priority_queue<pair<int, NodeID>, vector<pair<int, NodeID>>, greater<>> pq;
-    vector<int> additive_cost(nodes.size(), numeric_limits<int>::max());
-
-    for (AndOrGraphNode &node : nodes) {
-        node.forced_true = false;
-        node.num_forced_successors = 0;
-        if (node.type == NodeType::AND && node.successor_ids.empty()) {
-            node.forced_true = true;
-            additive_cost[node.id] = 0;
-            pq.emplace(0, node.id);
-        }
-    }
-
-    while (!pq.empty()) {
-        auto [current_cost, current_id] = pq.top();
-        pq.pop();
-        AndOrGraphNode &current_node = nodes[current_id];
-
-        for (NodeID pred_id : current_node.predecessor_ids) {
-            AndOrGraphNode &pred_node = nodes[pred_id];
-            pred_node.num_forced_successors++;
-
-            bool should_forced_true = false;
-            int new_cost = current_cost + pred_node.weight;
-
-            if (pred_node.type == NodeType::OR) {
-                should_forced_true = pred_node.num_forced_successors > 0;
-                if (new_cost < additive_cost[pred_id]) {
-                    additive_cost[pred_id] = new_cost;
-                    pq.emplace(new_cost, pred_id);
-                }
-            } else if (pred_node.type == NodeType::AND) {
-                should_forced_true = pred_node.num_forced_successors == pred_node.successor_ids.size();
-                if (should_forced_true) {
-                    int total_cost = pred_node.weight;
-                    for (NodeID succ_id : pred_node.successor_ids) {
-                        total_cost += additive_cost[succ_id];
-                    }
-                    if (total_cost < additive_cost[pred_id]) {
-                        additive_cost[pred_id] = total_cost;
-                        pq.emplace(total_cost, pred_id);
-                    }
-                }
-            }
-
-            if (should_forced_true && !pred_node.forced_true) {
-                pred_node.forced_true = true;
-                pq.emplace(additive_cost[pred_id], pred_id);
-            }
-        }
-    }
 }
 
 void add_nodes(vector<string> names, NodeType type, AndOrGraph &g, unordered_map<string, NodeID> &ids) {
