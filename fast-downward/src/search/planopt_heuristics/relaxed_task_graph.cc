@@ -31,7 +31,7 @@ RelaxedTaskGraph::RelaxedTaskGraph(const TaskProxy &task_proxy)
 	
 	        // Adicionando arestas do nó do operador para as proposições de efeito
 	        for (PropositionID effect_id : op.effects) {
-            	    graph.add_edge(operator_node_id, effect_node_id);
+            	    graph.add_edge(operator_node_id, variable_node_ids[effect_id]);
 	        }
 	    }
  
