@@ -31,11 +31,7 @@ RelaxedTaskGraph::RelaxedTaskGraph(const TaskProxy &task_proxy)
 	
 	        // Adicionando arestas do nó do operador para as proposições de efeito
 	        for (PropositionID effect_id : op.effects) {
-	            int effect_node_id = variable_node_ids[effect_id];
             	    graph.add_edge(operator_node_id, effect_node_id);
-
-                    // Definindo o custo do nó de efeito como o custo do operador
-                    graph.set_cost(effect_node_id, op.cost);
 	        }
 	    }
  
