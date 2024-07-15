@@ -11,8 +11,8 @@ RelaxedTaskGraph::RelaxedTaskGraph(const TaskProxy &task_proxy)
       variable_node_ids(relaxed_task.propositions.size()) {
  		
  		// Adicionando nó incial e o nó objetivo no grafo, como tipo OR
- 		initial_node_id = graph.add_node(NodeType::OR);
-    	goal_node_id = graph.add_node(NodeType::OR);
+ 	initial_node_id = graph.add_node(NodeType::AND);
+    	goal_node_id = graph.add_node(NodeType::AND);
     	
 	    	// Para cada proposição é criado um nó no grafo e seu ID é armazenado
 	    for (size_t i = 0; i < relaxed_task.propositions.size(); ++i) {
