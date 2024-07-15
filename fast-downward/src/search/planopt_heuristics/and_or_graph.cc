@@ -112,6 +112,62 @@ void AndOrGraph::weighted_most_conservative_valuation() {
       additive costs of all its successors plus its direct cost) and add it to
       the queue.
     */
+
+     // Inicializa a fila de prioridade para os nós com o menor custo primeiro
+    priority_queue<pair<int, NodeID>, vector<pair<int, NodeID>>, greater<pair<int, NodeID>>> pq;
+
+    // Inicializa os custos aditivos para infinito, exceto para os nós que estão inicialmente na fila
+    for (AndOrGraphNode &node : nodes) {
+        node.additive_cost = numeric_limits<int>::max();
+        node.num_forced_successors = 0;
+        if (node.type == NodeType::AND && node.successor_ids.empty()) {
+            node.additive_cost = 0;
+            node.forced_true = true;
+            pq.push(make_pair(0, node.id));
+        } else {
+            node.forced_true = false;
+        }
+    }
+
+    // Processa os nós na fila de prioridade
+    while (!pq.empty()) {
+        int current_cost = pq.top().first;
+        NodeID current_id = pq.top().second;
+        pq.pop();
+
+        AndOrGraphNode &current_node = nodes[current_id];
+
+        for (NodeID pred_id : current_node.predecessor_ids) {
+            AndOrGraphNode &pred_node = nodes[pred_id];
+
+            if (pred_node.type == NodeType::OR) {
+                // Calcula o novo custo para o nó OR
+                int new_cost = current_cost + pred_node.weight;
+                if (new_cost < pred_node.additive_cost) {
+                    pred_node.additive_cost = new_cost;
+                    pq.push(make_pair(new_cost, pred_id));
+                }
+                pred_node.num_forced_successors++;
+                if (pred_node.num_forced_successors > 0) {
+                    pred_node.forced_true = true;
+                }
+            } else if (pred_node.type == NodeType::AND) {
+                pred_node.num_forced_successors++;
+                if (pred_node.num_forced_successors == pred_node.successor_ids.size()) {
+                    // Calcula o custo total para o nó AND
+                    int total_cost = pred_node.weight;
+                    for (NodeID succ_id : pred_node.successor_ids) {
+                        total_cost += nodes[succ_id].additive_cost;
+                    }
+                    if (total_cost < pred_node.additive_cost) {
+                        pred_node.additive_cost = total_cost;
+                        pq.push(make_pair(total_cost, pred_id));
+                    }
+                    pred_node.forced_true = true;
+                }
+            }
+        }
+    }
 }
 
 void add_nodes(vector<string> names, NodeType type, AndOrGraph &g, unordered_map<string, NodeID> &ids) {
