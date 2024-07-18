@@ -131,42 +131,9 @@ void AndOrGraph::weighted_most_conservative_valuation() {
       the queue.
     */
 
-    std::queue<NodeID> open_list;
-    
-    // Inicializa todos os nós
-    for (auto &node : nodes) {
-        if (node.type == NodeType::OR) {
-            node.additive_cost = std::numeric_limits<int>::max();
-        } else {
-            node.additive_cost = 0;
-        }
-        node.num_forced_successors = node.successor_ids.size();
-        if (node.num_forced_successors == 0) {
-            open_list.push(node.id);
-        }
-    }
-    
-    // Propaga valores de custo aditivo
-    while (!open_list.empty()) {
-        NodeID node_id = open_list.front();
-        open_list.pop();
-        
-        AndOrGraphNode &node = nodes[node_id];
-        
-        for (NodeID pred_id : node.predecessor_ids) {
-            AndOrGraphNode &pred = nodes[pred_id];
-            
-            if (node.type == NodeType::OR) {
-                pred.additive_cost += node.additive_cost;
-            } else {
-                pred.additive_cost += node.direct_cost;
-            }
-            
-            if (--pred.num_forced_successors == 0) {
-                open_list.push(pred.id);
-            }
-        }
-    }
+    /*
+      TODO: add your code for exercise 2 (c) here.
+    */
 }
 
 void add_nodes(vector<string> names, NodeType type, AndOrGraph &g, unordered_map<string, NodeID> &ids) {
@@ -179,10 +146,6 @@ void add_edges(vector<pair<string, string>> edges, AndOrGraph &g, unordered_map<
     for (const auto &edge : edges) {
         g.add_edge(ids[edge.first], ids[edge.second]);
     }
-}
-
-void AndOrGraph::set_direct_cost(NodeID id, int cost){
-	nodes[id].direct_cost = cost;
 }
 
 void test_most_conservative_valuation(const unordered_set<string> &forced_true,
