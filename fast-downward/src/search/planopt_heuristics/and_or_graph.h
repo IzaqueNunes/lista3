@@ -25,7 +25,7 @@ struct AndOrGraphNode {
     NodeID achiever;
 
 
-    AndOrGraphNode(NodeID id, NodeType type, int direct_cost)
+    AndOrGraphNode(NodeID id, NodeType type, int direct_cost = 0)
         : id(id), type(type), direct_cost(direct_cost) {
     }
 };
