@@ -148,7 +148,7 @@ void add_edges(vector<pair<string, string>> edges, AndOrGraph &g, unordered_map<
     }
 }
 
-void AndOrGraph::set_direct_cost(NodeID id, int const){
+void AndOrGraph::set_direct_cost(NodeID id, int cost){
 	nodes[id].direct_cost = cost;
 }
 
