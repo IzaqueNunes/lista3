@@ -24,9 +24,9 @@ struct AndOrGraphNode {
     int additive_cost;
     NodeID achiever;
 
-    AndOrGraphNode(NodeID id, NodeType type, int direct_cost = 0)
-        : id(id), type(type), forced_true(false), num_forced_successors(0),
-          direct_cost(direct_cost), additive_cost(0), achiever(-1) {
+
+    AndOrGraphNode(NodeID id, NodeType type, int direct_cost)
+        : id(id), type(type), direct_cost(direct_cost) {
     }
 };
 
@@ -40,10 +40,6 @@ public:
     void remove_edge(NodeID from, NodeID to);
 
     const AndOrGraphNode &get_node(NodeID id) const;
-    AndOrGraphNode &get_node(NodeID id);  // Added non-const version for modification
-
-    void set_direct_cost(NodeID id, int cost); // Added method to set direct cost
-
     void most_conservative_valuation();
     void weighted_most_conservative_valuation();
 };
