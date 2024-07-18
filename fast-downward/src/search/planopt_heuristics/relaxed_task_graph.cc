@@ -1,49 +1,80 @@
-#ifndef PLANOPT_HEURISTICS_AND_OR_GRAPH_H
-#define PLANOPT_HEURISTICS_AND_OR_GRAPH_H
+#include "relaxed_task_graph.h"
 
-#include "../utils/hash.h"
-
+#include <iostream>
 #include <vector>
-#include <unordered_map>
+
+using namespace std;
 
 namespace planopt_heuristics {
-
-using NodeID = int;
-enum class NodeType { AND, OR };
-
-struct AndOrGraphNode {
-    NodeID id;
-    NodeType type;
-    bool forced_true;
-    int num_forced_successors;
-    std::vector<NodeID> successor_ids;
-    std::vector<NodeID> predecessor_ids;
-
-    // Only needed for exercises (d) and (f)
-    int direct_cost;
-    int additive_cost;
-    NodeID achiever;
-
-
-    AndOrGraphNode(NodeID id, NodeType type, int direct_cost)
-        : id(id), type(type), direct_cost(direct_cost) {
-    }
-};
-
-class AndOrGraph {
-    std::vector<AndOrGraphNode> nodes;
-    utils::HashMap<std::vector<NodeID>, NodeID> and_node_ids;
-    utils::HashMap<std::vector<NodeID>, NodeID> or_node_ids;
-public:
-    NodeID add_node(NodeType type, int weight = 0);
-    void add_edge(NodeID from, NodeID to);
-    void remove_edge(NodeID from, NodeID to);
-
-    const AndOrGraphNode &get_node(NodeID id) const;
-    void most_conservative_valuation();
-    void weighted_most_conservative_valuation();
-};
-
-extern void test_and_or_graphs();
+RelaxedTaskGraph::RelaxedTaskGraph(const TaskProxy &task_proxy)
+    : relaxed_task(task_proxy),
+      variable_node_ids(relaxed_task.propositions.size()) {
+ 		
+ 		// Adicionando nó incial e o nó objetivo no grafo, como tipo OR
+ 		initial_node_id = graph.add_node(NodeType::OR);
+    	goal_node_id = graph.add_node(NodeType::OR);
+    	
+	    	// Para cada proposição é criado um nó no grafo e seu ID é armazenado
+	    for (size_t i = 0; i < relaxed_task.propositions.size(); ++i) {
+	        variable_node_ids[i] = graph.add_node(NodeType::OR);
+	    }
+	    
+		    // Adicionando arestas de todos os operadores da tarefa relaxada
+	    for (const auto &op : relaxed_task.operators) {
+	        // Criando nó para o operador
+	        int operator_node_id = graph.add_node(NodeType::AND);
+	
+	        // Adicionando arestas das proposições de pré-condição para o nó do operador
+	        for (PropositionID precond_id : op.preconditions) {
+	            graph.add_edge(variable_node_ids[precond_id], operator_node_id);
+	        }
+	
+	        // Adicionando arestas do nó do operador para as proposições de efeito
+	        for (PropositionID effect_id : op.effects) {
+	            graph.add_edge(operator_node_id, variable_node_ids[effect_id]);
+	        }
+	    }
+ 
 }
-#endif
+
+void RelaxedTaskGraph::change_initial_state(const GlobalState &global_state) {
+    // Remove all initial edges that where introduced for relaxed_task.initial_state.
+    for (PropositionID id : relaxed_task.initial_state) {
+        graph.remove_edge(variable_node_ids[id], initial_node_id);
+    }
+
+    // Switch initial state of relaxed_task
+    relaxed_task.initial_state = relaxed_task.translate_state(global_state);
+
+    // Add all initial edges for relaxed_task.initial_state.
+    for (PropositionID id : relaxed_task.initial_state) {
+        graph.add_edge(variable_node_ids[id], initial_node_id);
+    }
+}
+
+bool RelaxedTaskGraph::is_goal_relaxed_reachable() {
+    // Compute the most conservative valuation of the graph and use it to
+    // return true iff the goal is reachable in the relaxed task.
+
+    graph.most_conservative_valuation();
+    
+    // Obtendo o nó de meta no gráfico
+    const AndOrGraphNode &goal_node = graph.get_node(goal_node_id); 
+    
+    return graph.get_node(goal_node_id).forced_true;
+}
+
+int RelaxedTaskGraph::additive_cost_of_goal() {
+    // Compute the weighted most conservative valuation of the graph and use it
+    // to return the h^add value of the goal node.
+
+    // TODO: add your code for exercise 2 (c) here.
+    return -1;
+}
+
+int RelaxedTaskGraph::ff_cost_of_goal() {
+    // TODO: add your code for exercise 2 (e) here.
+    return -1;
+}
+
+}
