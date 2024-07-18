@@ -157,7 +157,7 @@ void AndOrGraph::weighted_most_conservative_valuation() {
             AndOrGraphNode &pred = nodes[pred_id];
             
             if (node.type == NodeType::OR) {
-                pred.additive_cost = std::max(pred.additive_cost, node.additive_cost);
+                pred.additive_cost += node.additive_cost;
             } else {
                 pred.additive_cost += node.direct_cost;
             }
@@ -169,7 +169,7 @@ void AndOrGraph::weighted_most_conservative_valuation() {
     }
 
 
-// Para computar hmax é só substituir pred.additive_cost += node.additive_cost;
+// Para computar hmax substitua pred.additive_cost += node.additive_cost;
 // por: pred.additive_cost = std::max(pred.additive_cost, node.additive_cost);
 }
 
