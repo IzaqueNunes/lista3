@@ -70,8 +70,12 @@ int RelaxedTaskGraph::additive_cost_of_goal() {
     // Compute the weighted most conservative valuation of the graph and use it
     // to return the h^add value of the goal node.
 
-    // TODO: add your code for exercise 2 (c) here.
-    return -1;
+    // Computa a avaliação ponderada mais conservadora do grafo
+    graph.weighted_most_conservative_valuation();
+    
+    // Retorna o valor h^add do nó objetivo
+    const AndOrGraphNode &goal_node = graph.get_node(goal_node_id);
+    return goal_node.additive_cost;
 }
 
 int RelaxedTaskGraph::ff_cost_of_goal() {
