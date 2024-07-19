@@ -31,8 +31,6 @@ RelaxedTaskGraph::RelaxedTaskGraph(const TaskProxy &task_proxy)
         
         // Adicionando arestas do nó do operador para as proposições de efeito
         for (PropositionID effect_id : op.effects) {
-            AndOrGraphNode &effect_node = graph.get_node(variable_node_ids[effect_id]);
-            effect_node.direct_cost = op.cost;
             graph.add_edge(operator_node_id, variable_node_ids[effect_id]);
         }
     }
@@ -54,20 +52,24 @@ void RelaxedTaskGraph::change_initial_state(const GlobalState &global_state) {
 }
 
 bool RelaxedTaskGraph::is_goal_relaxed_reachable() {
-    // Compute the most conservative valuation of the graph and use it to
     // return true iff the goal is reachable in the relaxed task.
 
     graph.most_conservative_valuation();
-    return graph.get_node(goal_node_id).forced_true;
+
+    // Obtendo o nó de meta no gráfico
+    const AndOrGraphNode &goal_node = graph.get_node(goal_node_id); 
+
+    return goal_node.forced_true;
 }
 
 int RelaxedTaskGraph::additive_cost_of_goal() {
-    // Compute the weighted most conservative valuation of the graph and use it
-    // to return the h^add value of the goal node.
 
     // Computa a avaliação ponderada mais conservadora do grafo
     graph.weighted_most_conservative_valuation();
-    return graph.get_node(goal_node_id).additive_cost;
+
+    // Retorna o valor h^add do nó objetivo
+    const AndOrGraphNode &goal_node = graph.get_node(goal_node_id);
+    return goal_node.additive_cost;
 }
 
 int RelaxedTaskGraph::ff_cost_of_goal() {
