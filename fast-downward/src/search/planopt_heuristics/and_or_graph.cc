@@ -29,10 +29,10 @@ void remove_from_vector(vector<T> &v, const T &elem) {
 }
 
 void AndOrGraph::remove_edge(NodeID from, NodeID to) {
-    /* Note that this is an inefficient way of removing the edge. We would need
-       a different data structure to make this more efficient. */
-    remove_from_vector(nodes[from].successor_ids, to);
-    remove_from_vector(nodes[to].predecessor_ids, from);
+    auto &from_succs = nodes[from].successor_ids;
+    from_succs.erase(std::remove(from_succs.begin(), from_succs.end(), to), from_succs.end());
+    auto &to_preds = nodes[to].predecessor_ids;
+    to_preds.erase(std::remove(to_preds.begin(), to_preds.end(), from), to_preds.end());
 }
 
 const AndOrGraphNode &AndOrGraph::get_node(NodeID id) const {
@@ -131,46 +131,46 @@ void AndOrGraph::weighted_most_conservative_valuation() {
       the queue.
     */
 
-    std::queue<NodeID> open_list;
-    
-    // Inicializa todos os nós
+    std::queue<NodeID> queue;
     for (auto &node : nodes) {
-        if (node.type == NodeType::OR) {
-            node.additive_cost = std::numeric_limits<int>::max();
-        } else {
+        if (node.predecessor_ids.empty()) {
             node.additive_cost = 0;
-        }
-        node.num_forced_successors = node.successor_ids.size();
-        if (node.num_forced_successors == 0) {
-            open_list.push(node.id);
+            queue.push(node.id);
         }
     }
     
     // Propaga valores de custo aditivo
-    while (!open_list.empty()) {
-        NodeID node_id = open_list.front();
-        open_list.pop();
+    while (!queue.empty()) {
+        NodeID id = queue.front();
+        queue.pop();
+        AndOrGraphNode &node = get_node(id);
         
-        AndOrGraphNode &node = nodes[node_id];
-        
-        for (NodeID pred_id : node.predecessor_ids) {
-            AndOrGraphNode &pred = nodes[pred_id];
-            
-            if (node.type == NodeType::OR) {
-                pred.additive_cost += node.additive_cost;
-            } else {
-                pred.additive_cost += node.direct_cost;
+        if (node.type == NodeType::OR) {
+            for (NodeID succ : node.successor_ids) {
+                AndOrGraphNode &succ_node = get_node(succ);
+                if (node.additive_cost + succ_node.direct_cost < succ_node.additive_cost) {
+                    succ_node.additive_cost = node.additive_cost + succ_node.direct_cost;
+                    queue.push(succ);
+                }
             }
-            
-            if (--pred.num_forced_successors == 0) {
-                open_list.push(pred.id);
+        } else if (node.type == NodeType::AND) {
+            int max_cost = 0;
+            for (NodeID succ : node.successor_ids) {
+                AndOrGraphNode &succ_node = get_node(succ);
+                max_cost = std::max(max_cost, succ_node.additive_cost + succ_node.direct_cost);
+            }
+            if (max_cost < node.additive_cost) {
+                node.additive_cost = max_cost;
+                for (NodeID pred : node.predecessor_ids) {
+                    queue.push(pred);
+                }
             }
         }
     }
 
 
-// Para computar hmax substitua pred.additive_cost += node.additive_cost;
-// por: pred.additive_cost = std::max(pred.additive_cost, node.additive_cost);
+// Para hmax, substituir a linha node.additive_cost = max_cost; por:
+// node.additive_cost = std::max(node.additive_cost, max_cost);
 }
 
 void add_nodes(vector<string> names, NodeType type, AndOrGraph &g, unordered_map<string, NodeID> &ids) {
