@@ -31,6 +31,8 @@ RelaxedTaskGraph::RelaxedTaskGraph(const TaskProxy &task_proxy)
         
         // Adicionando arestas do nó do operador para as proposições de efeito
         for (PropositionID effect_id : op.effects) {
+            AndOrGraphNode &effect_node = graph.get_node(variable_node_ids[effect_id]);
+            effect_node.direct_cost = op.cost;
             graph.add_edge(operator_node_id, variable_node_ids[effect_id]);
         }
     }
@@ -56,11 +58,7 @@ bool RelaxedTaskGraph::is_goal_relaxed_reachable() {
     // return true iff the goal is reachable in the relaxed task.
 
     graph.most_conservative_valuation();
-    
-    // Obtendo o nó de meta no gráfico
-    const AndOrGraphNode &goal_node = graph.get_node(goal_node_id); 
-    
-    return goal_node.forced_true;
+    return graph.get_node(goal_node_id).forced_true;
 }
 
 int RelaxedTaskGraph::additive_cost_of_goal() {
@@ -69,10 +67,7 @@ int RelaxedTaskGraph::additive_cost_of_goal() {
 
     // Computa a avaliação ponderada mais conservadora do grafo
     graph.weighted_most_conservative_valuation();
-    
-    // Retorna o valor h^add do nó objetivo
-    const AndOrGraphNode &goal_node = graph.get_node(goal_node_id);
-    return goal_node.additive_cost;
+    return graph.get_node(goal_node_id).additive_cost;
 }
 
 int RelaxedTaskGraph::ff_cost_of_goal() {
