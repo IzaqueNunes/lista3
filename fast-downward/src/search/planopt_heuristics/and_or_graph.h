@@ -40,6 +40,7 @@ public:
     void remove_edge(NodeID from, NodeID to);
 
     const AndOrGraphNode &get_node(NodeID id) const;
+    AndOrGraphNode &get_node(NodeID id);
     void most_conservative_valuation();
     void weighted_most_conservative_valuation();
 };
