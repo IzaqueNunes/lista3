@@ -3,49 +3,65 @@
 #include <iostream>
 #include <vector>
 
+#include <queue>
+#include <unordered_set>
+
 using namespace std;
 
 namespace planopt_heuristics {
 RelaxedTaskGraph::RelaxedTaskGraph(const TaskProxy &task_proxy)
     : relaxed_task(task_proxy),
       variable_node_ids(relaxed_task.propositions.size()) {
-    
-    // Adicionando nó inicial e o nó objetivo no grafo, como tipo AND
+    /*
+      TODO: add your code for exercise 2 (b) here. Afterwards
+        - variable_node_ids[i] should contain the node id of the variable node for variable i
+        - initial_node_id should contain the node id of the initial node
+        - goal_node_id should contain the node id of the goal node
+        - the graph should contain precondition and effect nodes for all operators
+        - the graph should contain all necessary edges.
+    */
+
+    for( Proposition &prop : relaxed_task.propositions){
+        NodeID id = graph.add_node(NodeType::OR);
+        variable_node_ids[prop.id] = id;
+    }
+
     initial_node_id = graph.add_node(NodeType::AND);
+
+    for( PropositionID &prop : relaxed_task.initial_state){
+        graph.add_edge(variable_node_ids[prop], initial_node_id);
+    }
+
     goal_node_id = graph.add_node(NodeType::AND);
-    
-    // Para cada proposição é criado um nó no grafo e seu ID é armazenado
-    for (size_t i = 0; i < relaxed_task.propositions.size(); ++i) {
-        variable_node_ids[i] = graph.add_node(NodeType::OR);
+
+    for( PropositionID &prop : relaxed_task.goal){
+        graph.add_edge(goal_node_id, variable_node_ids[prop]);
     }
-    
-    // Adicionando arestas de todos os operadores da tarefa relaxada
-    for (const auto &op : relaxed_task.operators) {
-        // Criando nó para o operador
-        int operator_node_id = graph.add_node(NodeType::AND, op.cost);
-        int precondition_node = graph.add_node(NodeType::AND);
-        int effect_node = graph.add_node(NodeType::AND);
-        
-        // Adicionando arestas das proposições de pré-condição para o nó do operador
-        for (PropositionID precond_id : op.preconditions) {
-            graph.add_edge(precondition_node, variable_node_ids[precond_id]);
+
+    for( RelaxedOperator &op : relaxed_task.operators){
+        NodeID op_node = graph.add_node(NodeType::AND, op.cost);
+
+        // NodeID precondition_node = graph.add_node(NodeType::AND);
+        // NodeID effect_node = graph.add_node(NodeType::AND);
+
+        for( PropositionID &prop : op.preconditions){
+            // graph.add_edge(precondition_node, variable_node_ids[prop]);
+            graph.add_edge(op_node, variable_node_ids[prop]);            
         }
-        
-        // Adicionando arestas do nó do operador para as proposições de efeito
-        for (PropositionID effect_id : op.effects) {
-            graph.add_edge(variable_node_ids[effect_id], effect_node);
-            
-            // Ajustando o custo direto do nó de efeito
-            //graph.set_direct_cost(variable_node_ids[effect_id]);
+
+        for( PropositionID &prop : op.effects){
+            // graph.add_edge(variable_node_ids[prop], effect_node);
+            graph.add_edge(variable_node_ids[prop], op_node);
         }
-        
-        graph.add_edge(operator_node_id, precondition_node);
-        graph.add_edge(effect_node, operator_node_id);
+
+        // graph.add_edge(op_node, precondition_node);
+        // graph.add_edge(effect_node, op_node);
     }
+
 }
 
 void RelaxedTaskGraph::change_initial_state(const GlobalState &global_state) {
-    // Remove all initial edges that were introduced for relaxed_task.initial_state.
+    // Remove all initial edges that where introduced for relaxed_task.initial_state.
     for (PropositionID id : relaxed_task.initial_state) {
         graph.remove_edge(variable_node_ids[id], initial_node_id);
     }
@@ -64,28 +80,57 @@ bool RelaxedTaskGraph::is_goal_relaxed_reachable() {
     // return true iff the goal is reachable in the relaxed task.
 
     graph.most_conservative_valuation();
-    
-    // Obtendo o nó de meta no gráfico
-    const AndOrGraphNode &goal_node = graph.get_node(goal_node_id); 
-    
-    return goal_node.forced_true;
+    return graph.get_node(goal_node_id).forced_true;
 }
 
 int RelaxedTaskGraph::additive_cost_of_goal() {
     // Compute the weighted most conservative valuation of the graph and use it
     // to return the h^add value of the goal node.
 
-    // Computa a avaliação ponderada mais conservadora do grafo
+    // TODO: add your code for exercise 2 (c) here.
     graph.weighted_most_conservative_valuation();
-    
-    // Retorna o valor h^add do nó objetivo
-    const AndOrGraphNode &goal_node = graph.get_node(goal_node_id);
-    return goal_node.additive_cost;
+    return graph.get_node(goal_node_id).additive_cost;
 }
 
 int RelaxedTaskGraph::ff_cost_of_goal() {
     // TODO: add your code for exercise 2 (e) here.
-    return -1;
+    int ff_cost = 0;
+    
+    graph.weighted_most_conservative_valuation();
+
+    queue<AndOrGraphNode> q;
+    unordered_set<int> visited;
+
+    AndOrGraphNode n0 = graph.get_node(goal_node_id);
+
+    q.push(n0);
+
+    while(!q.empty()){
+        AndOrGraphNode node = q.front();
+
+        visited.insert(node.id);
+        q.pop(); 
+
+        ff_cost += node.direct_cost;
+
+        if(node.type == NodeType::AND){
+
+            for(NodeID &succ_id : node.successor_ids){
+
+                if(visited.find(succ_id) == visited.end()){
+                    q.push( graph.get_node(succ_id) );
+                }
+            }
+
+        } else if(node.type == NodeType::OR){
+            NodeID succ_id = node.achiever;
+            if(visited.find(succ_id) == visited.end()){
+                q.push( graph.get_node(succ_id) );
+            }
+        }
+    }
+
+    return ff_cost;
 }
 
 }
