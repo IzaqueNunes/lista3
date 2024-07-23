@@ -157,7 +157,7 @@ void AndOrGraph::weighted_most_conservative_valuation() {
         pq.pop();
         
         AndOrGraphNode &node = nodes[node_id];
-        
+        if(node.forced_true) continue;
         // se node forced true é falso, ele é um novo forced true. e vice-versa
         bool new_forced_true = !node.forced_true;
 		node.forced_true = true;
