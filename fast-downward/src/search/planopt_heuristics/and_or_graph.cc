@@ -132,11 +132,11 @@ void AndOrGraph::weighted_most_conservative_valuation() {
     */
 
     struct CompareNode {
-    	bool operator()(const AndOrGraphNode& n1, const AndOrGraphNode& n2) {
-        	return n1.additive_cost > n2.additive_cost; // Menor custo tem maior prioridade
+    	bool operator()(const AndOrGraphNode *n1, const AndOrGraphNode *n2) {
+        	return n1->additive_cost > n2->additive_cost; // Menor custo tem maior prioridade
         }
     };
-    std::priority_queue<AndOrGraphNode, std::vector<AndOrGraphNode>, CompareNode> pq;
+    std::priority_queue<AndOrGraphNode*, std::vector<AndOrGraphNode*>, CompareNode> pq;
     
     // Inicializa todos os nós
     for (auto &node : nodes) {
@@ -146,50 +146,50 @@ void AndOrGraph::weighted_most_conservative_valuation() {
 
 	if (node.type == NodeType::AND && node.successor_ids.size() == 0){
 		node.additive_cost = 0;
-		pq.push(node);
+		pq.push(&node);
 	}
     }
 
     
     // Propaga valores de custo aditivo
     while (!pq.empty()) {
-        NodeID node_id = pq.top().id;
+        NodeID node_id = pq.top()->id;
         pq.pop();
         
-        AndOrGraphNode &node = nodes[node_id];
-        if(node.forced_true) continue;
+        AndOrGraphNode *node = &nodes[node_id];
+        if(node->forced_true) continue;
         // se node forced true é falso, ele é um novo forced true. e vice-versa
-        bool new_forced_true = !node.forced_true;
-		node.forced_true = true;
+        bool new_forced_true = !node->forced_true;
+		node->forced_true = true;
 	    
         
-        for (NodeID pred_id : node.predecessor_ids) {
-            AndOrGraphNode &pred = nodes[pred_id];
+        for (NodeID pred_id : node->predecessor_ids) {
+            AndOrGraphNode *pred = &nodes[pred_id];
             
 			if(new_forced_true){
-            	pred.num_forced_successors++;
+            	pred->num_forced_successors++;
 			}
 			
-            if (pred.type == NodeType::OR) {
+            if (pred->type == NodeType::OR) {
             	// atualizar o additive_cost do pred
             	// node é um sucessor de pred
-            	int new_cost = node.additive_cost + node.direct_cost;
+            	int new_cost = node->additive_cost + node->direct_cost;
             	
-				if(new_cost < pred.additive_cost){
-					pred.additive_cost = new_cost;	
+				if(new_cost < pred->additive_cost){
+					pred->additive_cost = new_cost;	
 					pq.push(pred);
 				}
 				// pred.additive_cost = min(pred.additive_cost, node.additive_cost + node.direct_cost)
             	// adicionar pred na pilha
             } 
             
-            if (pred.type == NodeType::AND){
+            if (pred->type == NodeType::AND){
             	// se o número de sucessores for o numero de sucessores forced true 
             	// adicionar AND node na pilha
-            	if(pred.num_forced_successors == (int)pred.successor_ids.size()){
-            		pred.additive_cost = pred.direct_cost;
-            		for(NodeID & succ_id: pred.successor_ids){
-	            		pred.additive_cost += nodes[succ_id].additive_cost;
+            	if(pred->num_forced_successors == (int)pred->successor_ids.size()){
+            		pred->additive_cost = pred->direct_cost;
+            		for(NodeID & succ_id: pred->successor_ids){
+	            		pred->additive_cost += nodes[succ_id].additive_cost;
 					}
 					//adicionar pred na pilha	
 					pq.push(pred);	
