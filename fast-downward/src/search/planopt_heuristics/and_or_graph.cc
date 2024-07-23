@@ -6,7 +6,7 @@
 #include <deque>
 #include <iostream>
 #include <queue>
-#include <limits>
+#include <limits> 
 
 using namespace std;
 
@@ -66,44 +66,42 @@ void AndOrGraph::most_conservative_valuation() {
         node.num_forced_successors = 0;
         if (node.type == NodeType::AND && node.successor_ids.empty()) {
             queue.push_back(node.id);
-            // nós AND sem sucessores são marcados como true inicialmente
-            /* Nós AND sem sucessores são considerados forçados verdadeiros 
-			e são adicionados à fila porque, em um grafo AND-OR, um nó AND 
-			é verdadeiro se todos os seus sucessores são verdadeiros. 
-			Se um nó AND não possui sucessores, essa condição é trivialmente satisfeita, 
-			pois não há nenhum sucessor que possa ser falso. Portanto, nós AND sem 
-			sucessores são automaticamente verdadeiros.*/
-            node.forced_true = true;
         }
     }
 
+    /*
+      TODO: add your code for exercise 2 (a) here. Ignore the members
+      direct_cost, additive_cost, and achiever for now.
+    */
+
+    unordered_set<NodeID> visited;
+
     while(!queue.empty()){
-    	// enquanto a file não estiver fazia será removido o nó da frente da fila
-        NodeID current_id = queue.front();
+        NodeID id = queue.front();
         queue.pop_front();
-        AndOrGraphNode &current_node = nodes[current_id];
+        AndOrGraphNode *n = &nodes[id];
+        n->forced_true = true;
+        visited.insert(n->id);
 
-        for (NodeID pred_id : current_node.predecessor_ids){
-        	// para cada predecessor do nó atual será incrementado o valor de sucessores forçados do predecessor
-            AndOrGraphNode &pred_node = nodes[pred_id];
-            pred_node.num_forced_successors++;
+        for(NodeID &id_predecessor: n->predecessor_ids){
+            AndOrGraphNode *pred = &nodes[id_predecessor];
+            pred->num_forced_successors++;
+            
+            // if not visited
+            if (visited.find(pred->id) == visited.end()){
+                if(pred->type == NodeType::AND){
+                    if((int)pred->successor_ids.size() == pred->num_forced_successors){
+                        queue.push_back(pred->id);
+                    }
+                } 
 
-            bool should_forced_true = false;
-            if(pred_node.type == NodeType::OR){
-            	// um nó OR é forçado verdadeiro se pelo menos um de seus sucessores for verdadeiro
-                should_forced_true = pred_node.num_forced_successors > 0;
-            } else if(pred_node.type == NodeType::AND){
-            	// um nó AND é forçado verdadeiro se todos os seus sucessores forem verdadeiros
-                should_forced_true = pred_node.num_forced_successors == pred_node.successor_ids.size();
+                if(pred->type == NodeType::OR){
+                    queue.push_back(pred->id);
+                }
             }
 
-            if(should_forced_true && !pred_node.forced_true){
-            	// se o nó predecessor atual for forçado verdadeiro e ainda não foi marcado como tal, ele é marcado
-            	// como forçado verdadeiro e adicionado na fila
-                pred_node.forced_true = true;
-                queue.push_back(pred_id);
-            }
         }
+        
     }
 }
 
@@ -131,77 +129,76 @@ void AndOrGraph::weighted_most_conservative_valuation() {
       the queue.
     */
 
-    struct CompareNode {
-    	bool operator()(const AndOrGraphNode *n1, const AndOrGraphNode *n2) {
-        	return n1->additive_cost > n2->additive_cost; // Menor custo tem maior prioridade
-        }
+    /*
+      TODO: add your code for exercise 2 (c) here.
+    */
+    struct cmp
+    {
+        bool operator()(AndOrGraphNode* n1, AndOrGraphNode* n2) const { return n1->additive_cost > n2->additive_cost; }
     };
-    std::priority_queue<AndOrGraphNode*, std::vector<AndOrGraphNode*>, CompareNode> pq;
-    
-    // Inicializa todos os nós
-    for (auto &node : nodes) {
-        node.additive_cost = std::numeric_limits<int>::max();
+
+    priority_queue<AndOrGraphNode*, std::vector<AndOrGraphNode*>, cmp> queue;
+
+    for (AndOrGraphNode &node : nodes) {
+        node.forced_true = false;
         node.num_forced_successors = 0;
-		node.forced_true = false;
+        node.additive_cost = numeric_limits<int>::max();
 
-		if (node.type == NodeType::AND && node.successor_ids.empty()){
-			node.additive_cost = 0;
-			pq.push(&node);
-		}
-    }
+        if (node.type == NodeType::AND && node.successor_ids.empty()) {
+            node.additive_cost = 0;
 
-    
-    // Propaga valores de custo aditivo
-    while (!pq.empty()) {
-    	AndOrGraphNode *node = pq.top();
-        pq.pop();
-        
-        //AndOrGraphNode *node = &nodes[node_id];
-        if(node->forced_true) continue;
-        // se node forced true é falso, ele é um novo forced true. e vice-versa
-        bool new_forced_true = !(node->forced_true);
-		node->forced_true = true;
-	    
-        
-        for (NodeID pred_id : node->predecessor_ids) {
-            AndOrGraphNode *pred = &nodes[pred_id];
-            
-			if(new_forced_true){
-            	pred->num_forced_successors++;
-			
-			
-	            if (pred->type == NodeType::OR) {
-	            	// atualizar o additive_cost do pred
-	            	// node é um sucessor de pred
-	            	int new_cost = node->additive_cost + pred->direct_cost;
-	            	
-					if(new_cost < pred->additive_cost){
-						pred->additive_cost = new_cost;	
-					}
-					pq.push(pred);
-					// pred.additive_cost = min(pred.additive_cost, node.additive_cost + node.direct_cost)
-	            	// adicionar pred na pilha
-	            } 
-	            
-	            if (pred->type == NodeType::AND){
-	            	// se o número de sucessores for o numero de sucessores forced true 
-	            	// adicionar AND node na pilha
-	            	if(pred->num_forced_successors == (int)pred->successor_ids.size()){
-	            		pred->additive_cost = pred->direct_cost;
-	            		for(NodeID & succ_id: pred->successor_ids){
-		            		pred->additive_cost += nodes[succ_id].additive_cost;
-						}
-						//adicionar pred na pilha	
-						pq.push(pred);	
-					}
-				}
-        	}
+            queue.push(&node);
         }
     }
+    
+    while(!queue.empty()){
+        AndOrGraphNode *n = queue.top();
+        queue.pop();
+
+        bool new_forced_true = !(n->forced_true);
+        n->forced_true = true;
 
 
-// Para computar hmax substitua pred.additive_cost += node.additive_cost;
-// por: pred.additive_cost = std::max(pred.additive_cost, node.additive_cost);
+        for(NodeID &id_predecessor: n->predecessor_ids){
+            AndOrGraphNode *pred = &nodes[id_predecessor];
+
+            if(new_forced_true){
+                pred->num_forced_successors++;
+
+                if(pred->type == NodeType::AND){
+                    if((int)pred->successor_ids.size() == pred->num_forced_successors){
+                        
+
+                        // if it were an implementation of hmax, the following piece 
+                        pred->additive_cost = pred->direct_cost;
+                        for(NodeID &succ_id: pred->successor_ids){
+                            pred->additive_cost += nodes[succ_id].additive_cost;
+                        // would be changed to :
+                        //  pred->additive_cost = min(pred->additive_cost, n->additive_cost+pred->direct_cost);
+
+                        }
+
+                        queue.push(pred);
+                    }
+                }
+
+                if(pred->type == NodeType::OR){
+                    int new_cost = n->additive_cost+pred->direct_cost;
+                    
+                    if(new_cost < pred->additive_cost ){
+                        pred->achiever = n->id;
+                        pred->additive_cost = new_cost;
+                    }
+                    
+                    queue.push(pred);
+                }
+            }
+
+        }
+        
+    }
+
+    
 }
 
 void add_nodes(vector<string> names, NodeType type, AndOrGraph &g, unordered_map<string, NodeID> &ids) {
