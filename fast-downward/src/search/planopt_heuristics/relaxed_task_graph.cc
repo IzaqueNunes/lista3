@@ -23,16 +23,24 @@ RelaxedTaskGraph::RelaxedTaskGraph(const TaskProxy &task_proxy)
     for (const auto &op : relaxed_task.operators) {
         // Criando nó para o operador
         int operator_node_id = graph.add_node(NodeType::AND, op.cost);
+        int precondition_node = graph.add_node(NodeType::AND);
+        int effect_node = graph.add_node(NodeType::AND);
         
         // Adicionando arestas das proposições de pré-condição para o nó do operador
         for (PropositionID precond_id : op.preconditions) {
-            graph.add_edge(variable_node_ids[precond_id], operator_node_id);
+            graph.add_edge(precondition_node, variable_node_ids[precond_id]);
         }
         
         // Adicionando arestas do nó do operador para as proposições de efeito
         for (PropositionID effect_id : op.effects) {
-            graph.add_edge(operator_node_id, variable_node_ids[effect_id]);
+            graph.add_edge(variable_node_ids[effect_id], effect_node);
+            
+            // Ajustando o custo direto do nó de efeito
+            //graph.set_direct_cost(variable_node_ids[effect_id]);
         }
+        
+        graph.add_edge(operator_node_id, precondition_node);
+        graph.add_edge(effect_node, operator_node_id);
     }
 }
 
@@ -52,22 +60,25 @@ void RelaxedTaskGraph::change_initial_state(const GlobalState &global_state) {
 }
 
 bool RelaxedTaskGraph::is_goal_relaxed_reachable() {
+    // Compute the most conservative valuation of the graph and use it to
     // return true iff the goal is reachable in the relaxed task.
 
     graph.most_conservative_valuation();
-
+    
     // Obtendo o nó de meta no gráfico
     const AndOrGraphNode &goal_node = graph.get_node(goal_node_id); 
-
+    
     return goal_node.forced_true;
 }
 
 int RelaxedTaskGraph::additive_cost_of_goal() {
+    // Compute the weighted most conservative valuation of the graph and use it
+    // to return the h^add value of the goal node.
 
     // Computa a avaliação ponderada mais conservadora do grafo
     graph.weighted_most_conservative_valuation();
     
-    // Retorna o valor hadd do nó objetivo
+    // Retorna o valor h^add do nó objetivo
     const AndOrGraphNode &goal_node = graph.get_node(goal_node_id);
     return goal_node.additive_cost;
 }
