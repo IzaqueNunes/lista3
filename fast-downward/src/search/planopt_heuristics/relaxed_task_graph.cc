@@ -39,8 +39,7 @@ RelaxedTaskGraph::RelaxedTaskGraph(const TaskProxy &task_proxy)
     }
 
     for( RelaxedOperator &op : relaxed_task.operators){
-        NodeID op_node = graph.add_node(NodeType::AND);
-        // NodeID op_node = graph.add_node(NodeType::AND, op.cost);
+        NodeID op_node = graph.add_node(NodeType::AND, op.cost);
 
         // NodeID precondition_node = graph.add_node(NodeType::AND);
         // NodeID effect_node = graph.add_node(NodeType::AND);
