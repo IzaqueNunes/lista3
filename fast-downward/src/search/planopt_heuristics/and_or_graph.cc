@@ -169,11 +169,11 @@ void AndOrGraph::weighted_most_conservative_valuation() {
                     if((int)pred->successor_ids.size() == pred->num_forced_successors){
                         
 
-                        // if it were an implementation of hmax, the following piece 
+                        // o código abaixo computa hadd 
                         pred->additive_cost = pred->direct_cost;
                         for(NodeID &succ_id: pred->successor_ids){
                             pred->additive_cost += nodes[succ_id].additive_cost;
-                        // would be changed to :
+                        // para computar hmax, substitua as linhas acima por:
                         //  pred->additive_cost = min(pred->additive_cost, n->additive_cost+pred->direct_cost);
 
                         }
