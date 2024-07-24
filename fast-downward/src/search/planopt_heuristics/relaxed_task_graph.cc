@@ -41,21 +41,13 @@ RelaxedTaskGraph::RelaxedTaskGraph(const TaskProxy &task_proxy)
     for( RelaxedOperator &op : relaxed_task.operators){
         NodeID op_node = graph.add_node(NodeType::AND, op.cost);
 
-        // NodeID precondition_node = graph.add_node(NodeType::AND);
-        // NodeID effect_node = graph.add_node(NodeType::AND);
-
         for( PropositionID &prop : op.preconditions){
-            // graph.add_edge(precondition_node, variable_node_ids[prop]);
             graph.add_edge(op_node, variable_node_ids[prop]);            
         }
 
         for( PropositionID &prop : op.effects){
-            // graph.add_edge(variable_node_ids[prop], effect_node);
             graph.add_edge(variable_node_ids[prop], op_node);
         }
-
-        // graph.add_edge(op_node, precondition_node);
-        // graph.add_edge(effect_node, op_node);
     }
 
 }
